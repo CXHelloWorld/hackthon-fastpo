@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html manifest="bin/cache.manifest">
+	<head>
+		<title>Sumeru App F/W</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta content="target-densitydpi=high-dpi,width=device-width,initial-scale=1" name="viewport" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<link href="bin/sumeru.css" rel="stylesheet"></link>
+		<link href="bin/app.css" rel="stylesheet"></link>
+		<script src="bin/sumeru.js"></script>
+        <script src="bin/app.js"></script>
+		<script>
+			// 设置事件监听，DOM内容加载完成，和jQuery的$.ready() 效果差不多。 
+			window.addEventListener("DOMContentLoaded", function() { 
+				// canvas 元素将用于抓拍 
+				var canvas = document.getElementById("canvas"), 
+				context = canvas.getContext("2d"), 
+				// video 元素，将用于接收并播放摄像头 的数据流 
+				video = document.getElementById("video"), 
+				videoObj = { "video": true }, 
+				// 一个出错的回调函数，在控制台打印出错信息 
+				errBack = function(error) { 
+					if("object" === typeof window.console){ 
+						console.log("Video capture error: ", error.code); 
+					} 
+				}; 
+				// Put video listeners into place 
+				// 针对标准的浏览器 
+				if(navigator.getUserMedia) { // Standard 
+					navigator.getUserMedia(videoObj, function(stream) { 
+						video.src = stream; 
+						video.play(); 
+					}, errBack); 
+				} else if(navigator.webkitGetUserMedia) { // WebKit-prefixed 
+					navigator.webkitGetUserMedia(videoObj, function(stream){ 
+						video.src = window.webkitURL.createObjectURL(stream); 
+						video.play(); 
+					}, errBack); 
+				} 
+				// 对拍照按钮的事件监听 
+				document.getElementById("snap").addEventListener("click", function() { 
+					// 画到画布上 
+					context.drawImage(video, 0, 0, 480, 320);
+				}); 
+			}, false); 
+	</script>
+	<body>
+		<div><video id="video" autoplay height="320" width="480" border="2" style="text-align: left;"></video></div>
+		<div><button id="snap">Snap Photo</button></div>
+		<div><canvas id="canvas" height="320" width="480" border="3"></canvas></div>
+	</body>
+</html>
