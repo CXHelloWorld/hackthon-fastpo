@@ -9,12 +9,13 @@
 		<link href="bin/app.css" rel="stylesheet"></link>
 		<script src="bin/sumeru.js"></script>
         <script src="bin/app.js"></script>
+        <script src="bin/canvas2img.js"></script>
 		<script>
 			// 设置事件监听，DOM内容加载完成，和jQuery的$.ready() 效果差不多。 
 			window.addEventListener("DOMContentLoaded", function() { 
 				// canvas 元素将用于抓拍 
-				var canvas = document.getElementById("canvas"), 
-				context = canvas.getContext("2d"), 
+				var canvasEffect = document.getElementById("canvas_effect"), 
+				context = canvasEffect.getContext("2d"), 
 				// video 元素，将用于接收并播放摄像头 的数据流 
 				video = document.getElementById("video"), 
 				videoObj = { "video": true }, 
@@ -24,6 +25,10 @@
 						console.log("Video capture error: ", error.code); 
 					} 
 				}; 
+
+				// 控制变量: 是否在预览状态
+				var isPreview = false;
+
 				// Put video listeners into place 
 				// 针对标准的浏览器 
 				if(navigator.getUserMedia) { // Standard 
@@ -37,16 +42,89 @@
 						video.play(); 
 					}, errBack); 
 				} 
+
+				// 预加载图片
+				imgFrame = new Image();
+				imgFrame.src = "http://e.hiphotos.bdimg.com/album/s%3D1100%3Bq%3D90/sign=1c4c52444e086e066ea83b4a32384085/8cb1cb13495409237981ad0b9058d109b2de49df.png";
+
+				// 绘制函数
+				var onDraw = function() {
+					// 画布属性
+					var width = canvasEffect.width;
+					var height = canvasEffect.height;
+
+					// 清空界面
+					context.clearRect(0, 0, width, height);
+
+					// 视频
+					var imgVideoWidth = video.width;
+					var imgVideoHeight = video.height;
+					var imgVideoOffsetX = (width - imgVideoWidth) / 2;
+					var imgVideoOffsetY = (height - imgVideoHeight) / 2;
+					context.drawImage(video, imgVideoOffsetX, imgVideoOffsetY, imgVideoWidth, imgVideoHeight);
+
+					// 相框
+					var imgFrameWidth = imgFrame.width;
+					var imgFrameHeight = imgFrame.height;
+
+					var rateWidth = imgFrameWidth / width;
+					var rateHeight = imgFrameHeight / height;
+					var rateMin = Math.min(rateWidth ,rateHeight);
+
+					var imgFrameScaleWidth = width * rateMin;
+					var imgFrameScaleHeight = height * rateMin;
+
+					var imgFrameOffsetX = (imgFrameWidth - imgFrameScaleWidth) / 2;
+					var imgFrameOffsetY = (imgFrameHeight - imgFrameScaleHeight) / 2;
+
+					context.drawImage(imgFrame,
+						imgFrameOffsetX, imgFrameOffsetY, imgFrameScaleWidth, imgFrameScaleHeight,
+						0, 0, width, height);
+				};
+
+				// 刷新定时器
+				var timerDraw;
+
+				// 对预览状态进行监听
+				document.getElementById("preview").addEventListener("click", function() {
+					if (isPreview) {
+						clearInterval(timerDraw);
+						isPreview = false;
+					} else {
+					    timerDraw = setInterval(onDraw, 10);
+					    isPreview = true;
+					}
+				});
+
 				// 对拍照按钮的事件监听 
 				document.getElementById("snap").addEventListener("click", function() { 
-					// 画到画布上 
-					context.drawImage(video, 0, 0, 480, 320);
+					onDraw();
 				}); 
+
+				// 对过滤按钮的事件监听
+				document.getElementById("save").addEventListener("click", function() {
+					alert("保存图片成功！！！");
+
+					var type = 'image/png';
+					var downloadMime = 'image/octet-stream';
+					var strData = canvasEffect.toDataURL('image/png');
+
+					window.location.href = "image/octet-stream" + strData;
+					// saveFile(strData.replace(type, downloadMime));
+
+            		// saveAsImage(canvasEffect, w, h, type);
+				});
+
 			}, false); 
+
 	</script>
 	<body>
-		<div><video id="video" autoplay height="320" width="480" border="2" style="text-align: left;"></video></div>
-		<div><button id="snap">Snap Photo</button></div>
-		<div><canvas id="canvas" height="320" width="480" border="3"></canvas></div>
+		<div><video id="video" autoplay height="480" width="320" border="2" style="text-align: center;"></video></div>
+		<div>
+			<button id="preview">Preview Photo</button>
+			<button id="snap">Snap Photo</button>
+		</div>
+		<div><canvas id="canvas_effect" height="480" width="320" border="3"></canvas></div>
+		<div><button id="save">Save Photo</button></div>
 	</body>
 </html>
